@@ -125,7 +125,7 @@ cmd_cowork() {
   sudo ln -sfn /usr/share/edk2/ovmf/OVMF_VARS.fd /usr/share/OVMF/OVMF_VARS.fd
   echo vhost_vsock | sudo tee /etc/modules-load.d/vhost_vsock.conf >/dev/null
   sudo modprobe vhost_vsock
-  if ! id -nG | grep -qw kvm; then
+  if ! id -nG "$USER" | grep -qw kvm; then
     sudo usermod -aG kvm "$USER"
     log "added $USER to the kvm group: log out and back in"
   fi

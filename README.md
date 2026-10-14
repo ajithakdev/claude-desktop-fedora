@@ -1,75 +1,72 @@
 # claude-desktop-fedora
 
-Install and update Anthropic's official **Claude Desktop** (Linux beta) on Fedora.
+Run Anthropic's Claude Desktop (Linux beta) on Fedora. Anthropic only ships a `.deb` for Ubuntu and Debian. This script downloads that package from Anthropic, verifies it, and unpacks it into `~/.local`.
 
-Anthropic ships the Linux desktop app only as a `.deb` for Ubuntu and Debian
-([docs](https://code.claude.com/docs/en/desktop-linux)). This script fetches that
-official package from Anthropic's own repository, verifies it, and unpacks it into
-`~/.local`. No sudo is needed for the app itself.
+Unofficial and not affiliated with Anthropic. The repo holds one shell script and no Anthropic files.
 
-> Unofficial. Not affiliated with or endorsed by Anthropic. This repo contains only a
-> shell script; it does not redistribute any Anthropic software.
-
-## What it does
-
-1. Downloads Anthropic's signing key from `downloads.claude.ai` and checks its
-   fingerprint (`31DD DE24 DDFA B679 F42D 7BD2 BAA9 29FF 1A7E CACE`).
-2. Verifies the signed `InRelease` file, then the `Packages` index checksum.
-3. Downloads the newest `claude-desktop` `.deb` and checks its SHA256.
-4. Unpacks it into `~/.local/lib/claude-desktop` and adds the launcher, menu entry,
-   icons and the `claude://` link handler (needed for sign-in).
-
-## Requirements
-
-Fedora (tested on 44, GNOME/Wayland, x86_64; aarch64 untested, and `cowork` is x86_64 only), and:
+## Install
 
 ```bash
 sudo dnf install curl gnupg2 binutils tar
-```
-
-## Usage
-
-```bash
 git clone https://github.com/ajithakdev/claude-desktop-fedora
 cd claude-desktop-fedora
-./claude-desktop-fedora.sh install     # first install
-./claude-desktop-fedora.sh update      # later: installs only if a newer version exists
-./claude-desktop-fedora.sh version
-./claude-desktop-fedora.sh uninstall   # keeps your sign-in in ~/.config/Claude
+./claude-desktop-fedora.sh install
 ```
 
-Then open **Claude** from your app menu and sign in.
+Open Claude from the app menu and sign in. The app itself needs no sudo.
 
-There is no automatic update. Run `update` now and then, or add it to a user cron
-job / systemd timer. Quit the app before updating.
+## Commands
 
-## Cowork (optional, needs sudo)
+| Command | Effect |
+| --- | --- |
+| `install`, `update` | Install the newest version. Does nothing if it is already current. |
+| `update --force` | Reinstall the current version. |
+| `cowork` | Set up the Cowork tab (uses sudo). |
+| `version` | Print the installed version. |
+| `uninstall` | Remove the app. Your sign-in and chats in `~/.config/Claude` stay. |
 
-The Cowork tab runs tasks in a QEMU/KVM virtual machine. Enable virtualization
-(SVM / VT-x) in your BIOS first, then:
+The app does not update itself. Quit it, then run `update`.
+
+## Cowork
+
+Cowork runs tasks in a QEMU/KVM virtual machine. Turn on SVM or VT-x in your BIOS, then run:
 
 ```bash
 ./claude-desktop-fedora.sh cowork
 ```
 
-This installs `qemu-system-x86-core`, `edk2-ovmf` and `virtiofsd`, loads the
-`vhost_vsock` module at boot, and adds you to the `kvm` group (log out and back in).
+It installs `qemu-system-x86-core`, `edk2-ovmf` and `virtiofsd`, loads `vhost_vsock` at boot, and adds you to the `kvm` group. Log out and back in afterwards. The first Cowork task downloads the VM image, so it starts slowly.
 
-It also creates two symlinks, because the app looks for UEFI firmware only at
-Debian's path:
+The app looks for UEFI firmware only at Debian's path, so the script also links Fedora's files there:
 
 ```
 /usr/share/OVMF/OVMF_CODE.fd -> /usr/share/edk2/ovmf/OVMF_CODE.fd
 /usr/share/OVMF/OVMF_VARS.fd -> /usr/share/edk2/ovmf/OVMF_VARS.fd
 ```
 
-## Known limits
+## Verification
 
-- Fedora is not supported by Anthropic. A future release may need fixes here.
-- Not included: the GNOME Shell search provider and the AppArmor profile from the
-  `.deb` (Fedora uses SELinux).
-- Computer Use and dictation are not in the Linux beta at all.
+The script stops on any failed check:
+
+1. The signing key fingerprint must be `31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE`.
+2. The repository's `InRelease` signature must verify against that key.
+3. The `Packages` index must match the checksum in `InRelease`.
+4. The `.deb` must match the checksum in `Packages`.
+
+## Files
+
+- `~/.local/lib/claude-desktop/`: the app
+- `~/.local/bin/claude-desktop`: the launcher
+- `~/.local/share/applications/com.anthropic.Claude.desktop`: the menu entry and `claude://` handler, which sign-in needs
+- `~/.local/share/icons/hicolor/`: icons
+
+## Limits
+
+- Tested on Fedora 44 with GNOME on Wayland, x86_64. aarch64 is untested, and `cowork` is x86_64 only.
+- Anthropic does not support Fedora, so a new release can break this script.
+- The GNOME search provider and the AppArmor profile from the `.deb` are not installed.
+- The Linux beta has no Computer Use or dictation.
 
 ## License
 
-MIT for this script. Claude Desktop itself is Anthropic's software under its own terms.
+MIT for the script. Claude Desktop is Anthropic's software under Anthropic's terms.
